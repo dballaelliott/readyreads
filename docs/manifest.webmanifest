@@ -1,0 +1,14 @@
+{
+  "name": "readyreads",
+  "short_name": "readyreads",
+  "description": "Your want-to-read list, sorted by what you can borrow from your library right now.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F7FBFA",
+  "theme_color": "#F7FBFA",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

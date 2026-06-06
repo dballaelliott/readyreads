@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Direction D palette: near-white / teal / green / blue. Friendly, no serif, no rubber-stamp. -->
+  <rect width="512" height="512" rx="112" fill="#163A38"/>
+  <rect x="48" y="48" width="416" height="416" rx="80" fill="#F7FBFA"/>
+  <!-- open book / pages motif -->
+  <g>
+    <rect x="118" y="156" width="120" height="200" rx="20" fill="#ECF3F1"/>
+    <rect x="274" y="156" width="120" height="200" rx="20" fill="#ECF3F1"/>
+    <rect x="246" y="146" width="20" height="220" rx="10" fill="#163A38"/>
+  </g>
+  <!-- green availability check -->
+  <path d="M150 262 l34 36 l64 -78" fill="none" stroke="#0F9460" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- blue action dot -->
+  <circle cx="338" cy="256" r="30" fill="#2D6FD6"/>
+</svg>

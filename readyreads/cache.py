@@ -12,7 +12,7 @@ from .overdrive import AvailabilityStatus, FormatAvailability, LibbyResult
 
 def get_cache_dir() -> Path:
     """Get the cache directory, creating it if needed."""
-    cache_dir = Path.home() / ".cache" / "ezlibby"
+    cache_dir = Path.home() / ".cache" / "readyreads"
     cache_dir.mkdir(parents=True, exist_ok=True)
     return cache_dir
 

@@ -33,6 +33,7 @@ class LibbyResult:
     ebook: Optional[FormatAvailability] = None
     audiobook: Optional[FormatAvailability] = None
     overdrive_id: Optional[str] = None
+    goodreads_rating: Optional[float] = None
 
 
 class OverDriveClient:

@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "ezlibby"
+name = "readyreads"
 version = "0.1.0"
 description = "Match your Goodreads want-to-read list with your library's Libby collection"
 requires-python = ">=3.8"
@@ -14,7 +14,27 @@ dependencies = [
 ]
 
 [project.scripts]
-ezlibby = "ezlibby.main:main"
+readyreads = "readyreads.main:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["ezlibby"]
+packages = ["readyreads"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "ruff>=0.4.0",
+]
+
+[tool.ruff]
+target-version = "py38"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+# Embedded CSS/HTML asset strings (font URL, noise data-URI) can't be wrapped.
+"readyreads/html_report.py" = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

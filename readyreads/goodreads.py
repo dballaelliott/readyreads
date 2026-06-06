@@ -17,6 +17,7 @@ class Book:
     isbn: Optional[str] = None
     isbn13: Optional[str] = None
     goodreads_id: Optional[str] = None
+    goodreads_rating: Optional[float] = None
 
 
 class GoodreadsError(Exception):
@@ -81,6 +82,7 @@ def fetch_from_rss(url: str) -> List[Book]:
                 isbn=isbn,
                 isbn13=isbn13,
                 goodreads_id=goodreads_id,
+                goodreads_rating=parse_rating(entry.get("average_rating")),
             ))
 
     return books
@@ -118,9 +120,27 @@ def load_from_csv(filepath: Union[str, Path]) -> List[Book]:
                     isbn=isbn if isbn else None,
                     isbn13=isbn13 if isbn13 else None,
                     goodreads_id=goodreads_id if goodreads_id else None,
+                    goodreads_rating=parse_rating(row.get("Average Rating")),
                 ))
 
     return books
+
+
+def parse_rating(value: Optional[str]) -> Optional[float]:
+    """Parse a Goodreads average rating into a float, or None if absent/invalid.
+
+    Goodreads reports a 0 average rating for unrated books; treat that as None.
+    """
+    if value is None:
+        return None
+    value = str(value).strip()
+    if not value:
+        return None
+    try:
+        rating = float(value)
+    except ValueError:
+        return None
+    return rating if rating > 0 else None
 
 
 def clean_isbn(value: str) -> str:

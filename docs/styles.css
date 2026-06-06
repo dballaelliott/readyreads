@@ -1,0 +1,307 @@
+/* readyreads — Direction D "Friendly & Plain".
+   Single family (Figtree). Two accents only: green = available, blue = action.
+   Rhythm is whitespace ONLY — no dividers, borders, hairlines, cards-between-rows,
+   or shadows on content. */
+
+:root{
+  --bg:#F7FBFA;
+  --fill:#ECF3F1;
+  --ink:#163A38;
+  --soft:#5E7C7B;
+  --faint:#A6BAB8;
+  --green:#0F9460;
+  --blue:#2D6FD6;
+  --sans:"Figtree", system-ui, sans-serif;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{
+  font-family:var(--sans);
+  background:var(--bg);
+  color:var(--ink);
+  line-height:1.4;
+  min-height:100vh;
+}
+
+.visually-hidden{
+  position:absolute !important;
+  width:1px;height:1px;
+  padding:0;margin:-1px;
+  overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);
+  white-space:nowrap;border:0;
+}
+
+/* ---- shell ------------------------------------------------------------- */
+
+.app{
+  padding:16px 24px 40px;
+}
+
+/* ---- masthead ---------------------------------------------------------- */
+
+.masthead{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:16px;
+  position:relative;
+}
+.eyebrow{
+  font-size:12px;font-weight:700;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--faint);
+}
+.wordmark{
+  font-size:58px;font-weight:800;letter-spacing:-.04em;line-height:.95;
+  color:var(--ink);margin:10px 0;
+}
+.tagline{
+  font-size:18px;font-weight:500;color:var(--soft);line-height:1.4;
+  max-width:30ch;
+}
+.synced{
+  display:none; /* mobile drops the synced pill */
+  align-items:center;gap:6px;white-space:nowrap;flex:none;
+  font-size:12.5px;font-weight:600;color:var(--green);
+  background:var(--fill);padding:6px 12px;border-radius:999px;
+}
+.synced .dot{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block}
+
+/* ---- inputs / buttons -------------------------------------------------- */
+
+.field{
+  font-family:var(--sans);font-size:16px;font-weight:500;
+  padding:15px 17px;border-radius:14px;border:none;
+  background:var(--fill);color:var(--ink);width:100%;
+}
+.field::placeholder{color:var(--faint)}
+.field:focus{outline:2px solid var(--blue);outline-offset:1px}
+
+.btn-import{
+  width:100%;font-family:var(--sans);font-size:16px;font-weight:600;
+  padding:16px;border-radius:14px;border:none;
+  background:var(--fill);color:var(--soft);cursor:pointer;text-align:left;
+}
+
+.btn-primary{
+  width:100%;font-family:var(--sans);font-size:18px;font-weight:700;
+  padding:17px;border-radius:14px;border:none;
+  background:var(--blue);color:#fff;cursor:pointer;margin-top:30px;
+}
+.btn-primary:disabled{opacity:.55;cursor:default}
+
+.btn-refresh{
+  flex-shrink:0;font-family:var(--sans);font-size:16px;font-weight:700;
+  padding:0 22px;border-radius:13px;border:none;
+  background:var(--blue);color:#fff;cursor:pointer;
+  display:flex;align-items:center;gap:8px;
+}
+.btn-refresh .glyph{display:inline-block}
+
+/* ---- empty state ------------------------------------------------------- */
+
+.empty-controls{
+  margin-top:24px;display:flex;flex-direction:column;gap:12px;
+}
+.empty-prompt{
+  margin-top:34px;text-align:center;padding:8px 0 4px;
+}
+.empty-prompt .h{
+  font-size:26px;font-weight:800;letter-spacing:-.02em;margin-bottom:10px;color:var(--ink);
+}
+.empty-prompt .sub{
+  font-size:17px;font-weight:500;color:var(--soft);line-height:1.5;
+  max-width:320px;margin:0 auto;
+}
+.hint{
+  text-align:center;margin-top:14px;
+  font-size:13.5px;font-weight:600;color:var(--faint);line-height:1.5;
+}
+
+/* import drawer (revealed by the affordance) */
+.import-panel{
+  margin-top:12px;display:flex;flex-direction:column;gap:10px;
+}
+.import-panel .panel-label{
+  font-size:13.5px;font-weight:600;color:var(--soft);
+}
+.import-row{display:flex;gap:10px}
+.import-row .field{flex:1;min-width:0}
+.btn-load{
+  flex-shrink:0;font-family:var(--sans);font-size:15px;font-weight:700;
+  padding:0 18px;border-radius:13px;border:none;background:var(--blue);color:#fff;cursor:pointer;
+}
+
+/* ---- compact controls (loading + populated) --------------------------- */
+
+.controls{
+  display:flex;gap:10px;margin-top:22px;align-items:stretch;
+}
+.controls .field{flex:1;min-width:0;padding:13px 16px;border-radius:13px;font-size:16px}
+
+/* ---- settings disclosure ---------------------------------------------- */
+
+.settings{margin-top:14px}
+.settings summary{
+  list-style:none;cursor:pointer;
+  font-size:14px;font-weight:600;color:var(--faint);
+  display:inline-flex;align-items:center;gap:6px;
+}
+.settings summary::-webkit-details-marker{display:none}
+.settings summary::before{content:"▸";display:inline-block;transition:transform .2s}
+.settings[open] summary::before{transform:rotate(90deg)}
+.settings .field{margin-top:12px;font-size:15px;padding:13px 16px;border-radius:13px}
+.settings .note{margin-top:8px;font-size:13.5px;font-weight:500;color:var(--faint);line-height:1.5;max-width:46ch}
+
+/* ---- status / progress (loading) -------------------------------------- */
+
+.status-block{margin-top:24px}
+.status-row{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+}
+.status-left{
+  font-size:17px;font-weight:600;color:var(--ink);
+  display:flex;align-items:center;gap:10px;
+}
+.status-found{font-size:16px;font-weight:700;color:var(--green);white-space:nowrap}
+.spinner{
+  display:inline-block;width:16px;height:16px;flex:none;
+  border:2.5px solid var(--fill);border-top-color:var(--blue);
+  border-radius:50%;animation:rr-spin .7s linear infinite;
+}
+.progress{
+  height:7px;background:var(--fill);border-radius:99px;
+  margin-top:14px;overflow:hidden;
+}
+.progress > span{
+  display:block;height:100%;background:var(--blue);border-radius:99px;
+  transition:width .2s;
+}
+
+/* ---- summary (populated) ---------------------------------------------- */
+
+.summary{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:22px;
+}
+.summary .text{white-space:nowrap;font-size:19px;font-weight:700}
+.summary .avail{color:var(--green)}
+.summary .rest{color:var(--faint);font-weight:500}
+
+/* ---- groups ------------------------------------------------------------ */
+
+.group{margin-top:36px}
+.group-head{display:flex;align-items:center;gap:11px}
+.group-head h2{
+  font-size:30px;font-weight:800;letter-spacing:-.02em;color:var(--ink);
+  margin:0;white-space:nowrap;line-height:1.2;
+}
+.count-pill{
+  font-size:15px;font-weight:700;color:var(--soft);
+  background:var(--fill);padding:3px 11px;border-radius:999px;
+}
+.group-rows{margin-top:4px}
+
+/* ---- book row ---------------------------------------------------------- */
+
+.row{
+  display:flex;justify-content:space-between;align-items:center;gap:18px;
+  padding:17px 0;position:relative;
+}
+.row-main{flex:1;min-width:0}
+.title{
+  font-size:23px;font-weight:700;color:var(--ink);
+  line-height:1.22;letter-spacing:-.01em;text-decoration:none;display:block;
+}
+a.title:hover{text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:2px}
+.title.nolink{cursor:default}
+.byline{font-size:16px;font-weight:500;color:var(--soft);margin-top:4px}
+.avail-row{display:flex;gap:18px;margin-top:12px;flex-wrap:wrap}
+.avail{font-size:15px;white-space:nowrap}
+.avail.now{font-weight:700;color:var(--green)}
+.avail.wait{font-weight:500;color:var(--faint)}
+
+.rating{
+  display:flex;flex-direction:column;align-items:center;flex-shrink:0;line-height:1;
+}
+.rating .num{font-size:34px;font-weight:800;color:var(--ink);letter-spacing:-.02em}
+.rating .none{font-size:34px;font-weight:800;color:var(--faint);letter-spacing:-.02em}
+
+/* per-row re-check: subtle, revealed on hover */
+.row-refresh{
+  position:absolute;top:8px;right:0;
+  font-family:var(--sans);font-size:16px;line-height:1;
+  background:none;border:none;color:var(--faint);cursor:pointer;
+  padding:4px;border-radius:50%;opacity:0;transition:opacity .15s,color .2s;
+}
+.row:hover .row-refresh{opacity:1}
+.row-refresh:hover{color:var(--blue)}
+.row-refresh.spin{opacity:1;color:var(--blue);animation:rr-spin .7s linear infinite}
+
+/* ---- skeleton row ------------------------------------------------------ */
+
+.skeleton{
+  display:flex;justify-content:space-between;align-items:center;gap:18px;
+  padding:17px 0;opacity:.7;
+}
+.skeleton .sk-main{flex:1}
+.sk-bar{background:var(--fill);border-radius:6px}
+.sk-title{height:17px}
+.sk-byline{height:13px;width:38%;margin-top:11px}
+.skeleton .sk-label{font-size:14px;font-weight:600;color:var(--faint)}
+
+/* ---- failed details ---------------------------------------------------- */
+
+.failed{margin-top:32px;font-size:15px;font-weight:500;color:var(--soft)}
+.failed summary{cursor:pointer;font-weight:700;list-style:none}
+.failed summary::-webkit-details-marker{display:none}
+.failed summary::before{content:"▸";display:inline-block;margin-right:8px;transition:transform .2s;color:var(--soft)}
+.failed[open] summary::before{transform:rotate(90deg)}
+.failed .failed-list{margin-top:12px}
+.failed .failed-item{padding:6px 0}
+.failed .failed-item a{color:var(--soft);text-decoration:none}
+.failed .failed-item a:hover{text-decoration:underline;text-underline-offset:3px}
+
+/* ---- footer ------------------------------------------------------------ */
+
+.foot{
+  text-align:center;margin-top:34px;
+  font-size:13.5px;font-weight:500;color:var(--faint);line-height:1.5;
+}
+
+@keyframes rr-spin{to{transform:rotate(360deg)}}
+
+/* ---- wide viewports ---------------------------------------------------- */
+
+@media (min-width:720px){
+  .app{
+    max-width:600px;margin:0 auto;padding:32px 0 48px;
+  }
+  /* masthead + controls wrapped in a soft white card with a synced pill */
+  .masthead-card{
+    background:#fff;border-radius:22px;padding:26px 26px 22px;
+  }
+  .synced{display:flex}
+
+  .wordmark{font-size:46px;letter-spacing:-.035em;line-height:1;margin:8px 0}
+  .tagline{font-size:15.5px}
+  .eyebrow{font-size:11px}
+
+  .empty-controls{margin-top:22px}
+  .controls{margin-top:22px}
+
+  .empty-prompt .h{font-size:22px}
+  .empty-prompt .sub{font-size:15px}
+
+  .summary .text{font-size:17px}
+  .group{margin-top:34px}
+  .row{padding:15px 0}
+  .group-head h2{font-size:23px}
+  .title{font-size:19px}
+  .byline{font-size:14px}
+  .avail{font-size:13.5px}
+  .rating .num,.rating .none{font-size:29px}
+  .count-pill{font-size:13px}
+
+  /* the result body sits flush under the card */
+  .body{padding:0 6px}
+}

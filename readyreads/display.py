@@ -3,7 +3,6 @@
 from typing import Dict, List, Optional
 
 from rich.console import Console
-from rich.live import Live
 from rich.table import Table
 
 from .overdrive import AvailabilityStatus, FormatAvailability, LibbyResult
@@ -34,18 +33,41 @@ def format_availability(avail: Optional[FormatAvailability]) -> str:
     return "[dim]Not found[/dim]"
 
 
-def sort_key(r: LibbyResult) -> int:
-    """Sort key for results: available first, then waitlist, then not found."""
-    score = 0
+def availability_tier(r: LibbyResult) -> int:
+    """Group results into tiers for sorting.
+
+    0 = available as ebook, 1 = ebook unavailable but audio available,
+    2 = on the waitlist for some format, 3 = not found in the collection.
+    """
     if r.ebook and r.ebook.status == AvailabilityStatus.AVAILABLE:
-        score -= 10
+        return 0
     if r.audiobook and r.audiobook.status == AvailabilityStatus.AVAILABLE:
-        score -= 10
-    if r.ebook and r.ebook.status == AvailabilityStatus.WAITLIST:
-        score -= 5
-    if r.audiobook and r.audiobook.status == AvailabilityStatus.WAITLIST:
-        score -= 5
-    return score
+        return 1
+    on_waitlist = (
+        (r.ebook and r.ebook.status == AvailabilityStatus.WAITLIST)
+        or (r.audiobook and r.audiobook.status == AvailabilityStatus.WAITLIST)
+    )
+    return 2 if on_waitlist else 3
+
+
+def ebook_wait(r: LibbyResult) -> float:
+    """Ebook wait time in days for sorting (available = 0, unknown = infinity)."""
+    e = r.ebook
+    if e is None:
+        return float("inf")
+    if e.status == AvailabilityStatus.AVAILABLE:
+        return 0
+    if e.status == AvailabilityStatus.WAITLIST:
+        return e.wait_days if e.wait_days is not None else float("inf")
+    return float("inf")
+
+
+def sort_results(results: List[LibbyResult]) -> List[LibbyResult]:
+    """Sort results lexicographically: tier, then ebook wait, then rating (desc)."""
+    return sorted(
+        results,
+        key=lambda r: (availability_tier(r), ebook_wait(r), -(r.goodreads_rating or 0.0)),
+    )
 
 
 def build_table(
@@ -60,18 +82,21 @@ def build_table(
     table.add_column("Author", style="white", no_wrap=False, max_width=20)
     table.add_column("Ebook", justify="center", no_wrap=True)
     table.add_column("Audiobook", justify="center", no_wrap=True)
+    table.add_column("★", justify="right", style="yellow", no_wrap=True)
 
     if cache_ages:
         table.add_column("Updated", justify="right", style="dim", no_wrap=True)
 
-    sorted_results = sorted(results, key=sort_key)
+    sorted_results = sort_results(results)
 
     for result in sorted_results:
+        rating = f"{result.goodreads_rating:.2f}" if result.goodreads_rating else ""
         row = [
             result.title,
             result.author,
             format_availability(result.ebook),
             format_availability(result.audiobook),
+            rating,
         ]
         if cache_ages:
             key = f"{result.title}|{result.author}"

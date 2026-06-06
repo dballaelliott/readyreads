@@ -1,4 +1,4 @@
-"""Minimalist GUI for ezlibby."""
+"""Minimalist GUI for readyreads."""
 
 import tkinter as tk
 from tkinter import ttk
@@ -52,7 +52,7 @@ class ResultsWindow:
         self.cache_ages = cache_ages or {}
 
         self.root = tk.Tk()
-        self.root.title("ezlibby")
+        self.root.title("readyreads")
         self.root.configure(bg=COLORS["bg"])
 
         # Window size and position

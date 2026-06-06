@@ -1,4 +1,4 @@
-"""CLI interface for ezlibby."""
+"""CLI interface for readyreads."""
 
 import argparse
 import os
@@ -7,6 +7,8 @@ import sys
 import threading
 import time
 from typing import Dict, List, Optional
+
+from . import __version__
 
 from rich.console import Console, Group
 from rich.live import Live
@@ -66,15 +68,21 @@ def detect_source_type(source: str) -> str:
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
-        prog="ezlibby",
+        prog="readyreads",
         description="Match your Goodreads want-to-read list with your library's Libby collection",
         epilog="""
 Examples:
-  ezlibby https://www.goodreads.com/review/list/120420619?shelf=to-read
-  ezlibby ~/Downloads/goodreads_library_export.csv
-  ezlibby 120420619  # Just the user ID works too
+  readyreads https://www.goodreads.com/review/list/12345678?shelf=to-read
+  readyreads ~/Downloads/goodreads_library_export.csv
+  readyreads 12345678  # Just the user ID works too
         """,
         formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+
+    parser.add_argument(
+        "--version", "-V",
+        action="version",
+        version=f"%(prog)s {__version__}",
     )
 
     parser.add_argument(
@@ -109,9 +117,15 @@ Examples:
     )
 
     parser.add_argument(
+        "--no-html",
+        action="store_true",
+        help="Don't open the HTML report in your browser (just print the table)",
+    )
+
+    parser.add_argument(
         "--gui", "-g",
         action="store_true",
-        help="Open results in a GUI window",
+        help="Open results in the desktop GUI window instead of the HTML report",
     )
 
     return parser.parse_args()
@@ -173,7 +187,9 @@ class LiveSearcher:
             cached = self.cache.get(book.title, book.author)
             if cached and self.use_cache:
                 key = self._get_result_key(cached.title, cached.author)
-                self.results[key] = cached.to_libby_result()
+                result = cached.to_libby_result()
+                result.goodreads_rating = book.goodreads_rating
+                self.results[key] = result
                 self.cache_ages[key] = cached.age_str()
                 cache_hits += 1
             else:
@@ -188,6 +204,7 @@ class LiveSearcher:
 
             result = self.client.search(book.title, book.author)
             if result:
+                result.goodreads_rating = book.goodreads_rating
                 key = self._get_result_key(result.title, result.author)
                 with self.lock:
                     self.results[key] = result
@@ -302,11 +319,19 @@ def main() -> int:
         )
         results = searcher.run()
 
-        # Open GUI if requested
-        if args.gui and results:
-            from .gui import show_results
-            console.print("[dim]Opening GUI...[/dim]")
-            show_results(results, searcher.cache_ages)
+        # Present results: desktop GUI if asked, otherwise the HTML report by default.
+        if results:
+            if args.gui:
+                from .gui import show_results
+                console.print("[dim]Opening GUI...[/dim]")
+                show_results(results, searcher.cache_ages)
+            elif not args.no_html:
+                from datetime import datetime
+
+                from .html_report import show_html_report
+                label = datetime.now().strftime("%b %d, %Y")
+                path = show_html_report(results, args.library, searcher.cache_ages, label)
+                console.print(f"[dim]Opened report in your browser: {path}[/dim]")
 
         return 0
 

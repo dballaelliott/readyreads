@@ -468,7 +468,7 @@ def test_detect_source_type_url():
 
 
 def test_detect_source_type_user_id():
-    assert detect_source_type("120420619") == "url"
+    assert detect_source_type("12345678") == "url"
 
 
 def test_detect_source_type_csv_file():
