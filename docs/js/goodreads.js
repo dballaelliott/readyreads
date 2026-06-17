@@ -15,6 +15,33 @@ export function cleanTitle(title) {
   return title.replace(/\s*\([^)]*#\d+[^)]*\)\s*$/, '').trim();
 }
 
+// Normalize whatever a user pastes into a Goodreads shelf RSS URL.
+// Accepts: a bare numeric user id, a profile/shelf URL (/user/show/ID or
+// /review/list/ID), or a full list_rss URL. A pasted list_rss URL is returned
+// untouched so its `key=` (needed for private profiles) survives. Throws if no
+// user id can be found. Pure/network-free — safe for Node tests.
+export function goodreadsToRss(input) {
+  const raw = (input || '').trim();
+  if (!raw) throw new Error('Enter a Goodreads link or user ID.');
+
+  // Already an RSS feed URL — keep as-is (preserves key= and shelf=).
+  if (/\/review\/list_rss\//.test(raw)) return raw;
+
+  // Bare numeric user id.
+  if (/^\d+$/.test(raw)) {
+    return `https://www.goodreads.com/review/list_rss/${raw}?shelf=to-read`;
+  }
+
+  // Profile or shelf URL: /review/list/<id> or /user/show/<id>.
+  const idMatch = raw.match(/\/(?:review\/list|user\/show)\/(\d+)/);
+  if (!idMatch) {
+    throw new Error("That doesn't look like a Goodreads profile link or user ID.");
+  }
+  const shelfMatch = raw.match(/[?&]shelf=([^&#]+)/);
+  const shelf = shelfMatch ? shelfMatch[1] : 'to-read';
+  return `https://www.goodreads.com/review/list_rss/${idMatch[1]}?shelf=${shelf}`;
+}
+
 function cleanIsbn(value) {
   // Goodreads wraps ISBNs as ="0060590297" to stop Excel mangling them; after
   // CSV quote-stripping that leaves a leading '='. Strip it and any stray quotes.

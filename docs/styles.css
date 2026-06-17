@@ -131,6 +131,12 @@ body{
   flex-shrink:0;font-family:var(--sans);font-size:15px;font-weight:700;
   padding:0 18px;border-radius:13px;border:none;background:var(--blue);color:#fff;cursor:pointer;
 }
+.btn-load:disabled{opacity:.6;cursor:default}
+.btn-load.btn-secondary{background:transparent;color:var(--blue);box-shadow:inset 0 0 0 2px var(--blue)}
+.import-panel .note{font-size:13.5px;font-weight:500;color:var(--faint);line-height:1.5;max-width:46ch}
+.import-error{
+  font-size:13.5px;font-weight:600;line-height:1.5;color:#b3261e;max-width:48ch;
+}
 
 /* ---- compact controls (loading + populated) --------------------------- */
 

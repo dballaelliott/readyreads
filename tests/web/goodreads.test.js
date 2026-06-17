@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseCsv, parseRss, parseRating, cleanTitle } from '../../docs/js/goodreads.js';
+import { parseCsv, parseRss, parseRating, cleanTitle, goodreadsToRss } from '../../docs/js/goodreads.js';
 
 const CSV = [
   'Book Id,Title,Author,ISBN,ISBN13,Average Rating,Exclusive Shelf',
@@ -58,4 +58,29 @@ test('parseRating: blank and zero become null', () => {
 test('cleanTitle strips series parenthetical', () => {
   assert.equal(cleanTitle('Dune (Dune, #1)'), 'Dune');
   assert.equal(cleanTitle('Plain Title'), 'Plain Title');
+});
+
+test('goodreadsToRss: bare numeric id', () => {
+  assert.equal(
+    goodreadsToRss('12345678'),
+    'https://www.goodreads.com/review/list_rss/12345678?shelf=to-read');
+});
+
+test('goodreadsToRss: profile and shelf URLs derive list_rss', () => {
+  assert.equal(
+    goodreadsToRss('https://www.goodreads.com/user/show/12345678-jane'),
+    'https://www.goodreads.com/review/list_rss/12345678?shelf=to-read');
+  assert.equal(
+    goodreadsToRss('https://www.goodreads.com/review/list/12345678?shelf=read'),
+    'https://www.goodreads.com/review/list_rss/12345678?shelf=read');
+});
+
+test('goodreadsToRss: existing list_rss URL is preserved (keeps key)', () => {
+  const url = 'https://www.goodreads.com/review/list_rss/12345678?key=abc123&shelf=to-read';
+  assert.equal(goodreadsToRss(url), url);
+});
+
+test('goodreadsToRss: invalid input throws', () => {
+  assert.throws(() => goodreadsToRss(''));
+  assert.throws(() => goodreadsToRss('https://example.com/not-goodreads'));
 });

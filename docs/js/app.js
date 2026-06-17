@@ -1,7 +1,7 @@
 // readyreads web — orchestration: load list, stream availability, refresh.
 // Drives three UI states (empty / loading / populated) from the search lifecycle.
 
-import { parseCsv, parseRss } from './goodreads.js';
+import { parseCsv, parseRss, goodreadsToRss } from './goodreads.js';
 import { searchBook } from './overdrive.js';
 import { Cache, ageStr } from './store.js';
 import { safeLibrary } from './sort.js';
@@ -12,6 +12,14 @@ import {
 const CONCURRENCY = 5;
 const SESSION_KEY = 'readyreads:session';
 const SETTINGS_KEY = 'readyreads:settings';
+
+// Goodreads sends no CORS header, so a browser can't read its RSS directly — a
+// server-side hop is required. These public CORS proxies are the zero-setup
+// fallback (tried in order); a user's own Worker, if configured, is preferred.
+const DEFAULT_PROXIES = [
+  url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+];
 
 const app = document.getElementById('app');
 const csvInput = document.getElementById('csv');
@@ -27,6 +35,8 @@ const state = {
   checked: 0,
   pending: 0,
   importOpen: false,
+  importBusy: false,
+  importError: '',
 };
 
 const srcKey = (title, author) => `${title.toLowerCase().trim()}|${author.toLowerCase().trim()}`;
@@ -116,30 +126,37 @@ function compactControls(spinning) {
 function importPanel() {
   const panel = el('div', 'import-panel');
 
-  const csvLabel = el('div', 'panel-label', 'Upload a Goodreads CSV export (no proxy needed):');
-  panel.appendChild(csvLabel);
-
-  const pickRow = el('div', 'import-row');
-  const pick = el('button', 'btn-load', 'Choose CSV…');
-  pick.style.flex = '1';
-  pick.addEventListener('click', () => csvInput.click());
-  pickRow.appendChild(pick);
-  panel.appendChild(pickRow);
-
-  const urlLabel = el('div', 'panel-label', '…or paste a Goodreads shelf RSS link:');
-  panel.appendChild(urlLabel);
+  // Primary path: paste a Goodreads link or user id — no setup needed.
+  panel.appendChild(el('div', 'panel-label', 'Paste your Goodreads profile link or user ID:'));
 
   const urlRow = el('div', 'import-row');
   const url = el('input', 'field');
-  url.type = 'url'; url.spellcheck = false;
-  url.placeholder = 'https://www.goodreads.com/review/list_rss/…';
-  const load = el('button', 'btn-load', 'Load');
+  url.type = 'text'; url.spellcheck = false; url.inputMode = 'url';
+  url.autocapitalize = 'off'; url.autocomplete = 'off';
+  url.placeholder = 'goodreads.com/user/show/… or your numeric ID';
+  const load = el('button', 'btn-load', state.importBusy ? 'Loading…' : 'Load');
+  load.disabled = state.importBusy;
   const go = () => onRss(url.value.trim());
   load.addEventListener('click', go);
   url.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
   urlRow.appendChild(url);
   urlRow.appendChild(load);
   panel.appendChild(urlRow);
+
+  if (state.importError) {
+    panel.appendChild(el('div', 'import-error', state.importError));
+  } else {
+    panel.appendChild(el('div', 'note', 'Works with a public profile — no setup needed. (Profile must be set to "anyone".)'));
+  }
+
+  // Secondary path: CSV for the full list (RSS is capped at 100 books).
+  panel.appendChild(el('div', 'panel-label', 'Have a long list? Upload a Goodreads CSV export instead:'));
+  const pickRow = el('div', 'import-row');
+  const pick = el('button', 'btn-load btn-secondary', 'Choose CSV…');
+  pick.style.flex = '1';
+  pick.addEventListener('click', () => csvInput.click());
+  pickRow.appendChild(pick);
+  panel.appendChild(pickRow);
 
   return panel;
 }
@@ -150,12 +167,13 @@ function settingsDisclosure() {
   d.appendChild(el('summary', null, 'Settings'));
   const proxy = el('input', 'field');
   proxy.type = 'url'; proxy.spellcheck = false;
-  proxy.placeholder = 'RSS proxy URL (Cloudflare Worker)';
+  proxy.placeholder = 'Your own RSS proxy URL (Cloudflare Worker)';
   proxy.value = state.proxyUrl;
   proxy.addEventListener('change', () => { state.proxyUrl = proxy.value.trim(); saveSettings(); });
   d.appendChild(proxy);
   d.appendChild(el('div', 'note',
-    'CSV upload needs no proxy. The link import needs one because Goodreads blocks direct browser requests — see worker/README.md to deploy your own.'));
+    'Optional. Link import already works through a built-in proxy. Goodreads blocks direct browser '
+    + 'requests, so for the most reliable, private fetching you can deploy your own — see worker/README.md.'));
   return d;
 }
 
@@ -165,7 +183,7 @@ function viewEmpty(card) {
   const controls = el('div', 'empty-controls');
   controls.appendChild(libraryField());
 
-  const importBtn = el('button', 'btn-import', '↑ Import a Goodreads CSV or paste a link');
+  const importBtn = el('button', 'btn-import', '＋ Add your Goodreads list');
   controls.appendChild(importBtn);
   card.appendChild(controls);
 
@@ -173,7 +191,7 @@ function viewEmpty(card) {
   importBtn.addEventListener('click', () => {
     state.importOpen = !state.importOpen;
     if (state.importOpen && !panel) { panel = importPanel(); controls.appendChild(panel); }
-    else if (panel) { panel.remove(); panel = null; }
+    else if (panel) { panel.remove(); panel = null; state.importError = ''; }
   });
   if (state.importOpen) { panel = importPanel(); controls.appendChild(panel); }
 
@@ -191,7 +209,7 @@ function viewEmpty(card) {
   card.appendChild(cta);
 
   card.appendChild(el('div', 'hint',
-    state.books.length ? 'tap to check your list' : 'import a list above to get started'));
+    state.books.length ? 'tap to check your list' : 'paste your Goodreads link above to get started'));
 }
 
 function viewLoading(card, body) {
@@ -346,22 +364,58 @@ async function onCsv(file) {
   } catch { /* ignore parse errors */ }
 }
 
-async function onRss(url) {
-  if (!url) return;
-  if (!state.proxyUrl) {
+// Try each proxy in turn; return books from the first that yields a parseable
+// feed. A user's own Worker (state.proxyUrl) is preferred, then public proxies.
+async function fetchGoodreadsRss(rssUrl) {
+  const builders = [];
+  if (state.proxyUrl) {
+    const base = state.proxyUrl;
+    builders.push(url => `${base}${base.includes('?') ? '&' : '?'}url=${encodeURIComponent(url)}`);
+  }
+  builders.push(...DEFAULT_PROXIES);
+
+  let lastErr;
+  for (const build of builders) {
+    try {
+      const resp = await fetch(build(rssUrl));
+      if (!resp.ok) { lastErr = new Error(`proxy returned ${resp.status}`); continue; }
+      const books = parseRss(await resp.text());
+      if (books.length) return books;
+      lastErr = new Error('no books in feed');
+    } catch (e) { lastErr = e; }
+  }
+  throw lastErr || new Error('all proxies failed');
+}
+
+async function onRss(input) {
+  if (!input || state.importBusy) return;
+
+  let rssUrl;
+  try {
+    rssUrl = goodreadsToRss(input);
+  } catch (e) {
+    state.importError = e.message;
     state.importOpen = true;
     render();
     return;
   }
+
+  state.importBusy = true;
+  state.importError = '';
+  render();
+
   try {
-    const proxied = `${state.proxyUrl}${state.proxyUrl.includes('?') ? '&' : '?'}url=${encodeURIComponent(url)}`;
-    const resp = await fetch(proxied);
-    if (!resp.ok) throw new Error(`proxy returned ${resp.status}`);
-    const books = parseRss(await resp.text());
-    if (!books.length) throw new Error('no books parsed');
+    const books = await fetchGoodreadsRss(rssUrl);
+    state.importBusy = false;
     state.importOpen = false;
     await runSearch(books);
-  } catch { /* ignore */ }
+  } catch {
+    state.importBusy = false;
+    state.importError = "Couldn't load that list. If your Goodreads profile is private, "
+      + 'make it public (Settings → Profile → "anyone"), paste your full RSS link, or upload a CSV.';
+    state.importOpen = true;
+    render();
+  }
 }
 
 // ---- wire up --------------------------------------------------------------
