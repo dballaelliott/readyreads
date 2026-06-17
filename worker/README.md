@@ -1,13 +1,18 @@
 # Goodreads RSS proxy (Cloudflare Worker)
 
-The webapp can read your Goodreads list two ways:
+The webapp can read your Goodreads list two ways, **both working with no setup**:
 
-- **CSV upload** — works with no proxy. (Recommended; no 100-book limit.)
-- **Paste an RSS link** — needs this tiny proxy, because Goodreads blocks direct
-  browser requests (no CORS header). OverDrive does **not** need a proxy.
+- **Paste your profile link or user ID** — the app derives your shelf's RSS feed
+  and fetches it through a built-in public proxy. Works for any **public** profile
+  (Goodreads → Settings → Profile → "Who can view my profile" = *anyone*).
+- **CSV upload** — best for lists over 100 books (RSS is capped at the most-recent 100).
 
-This Worker fetches a Goodreads RSS feed server-side and re-serves it with CORS
-enabled. It only proxies `goodreads.com`, so it isn't an open relay.
+Deploying this Worker is **optional**. Browsers can't fetch Goodreads directly
+(it sends no CORS header), so the app relies on a proxy. The built-in public
+proxies work out of the box, but they fetch from shared datacenter IPs that
+Goodreads occasionally rate-limits or blocks. Running your own Worker gives you
+the **most reliable and private** path: requests go through your Cloudflare edge,
+and it only proxies `goodreads.com/review/list_rss/`, so it isn't an open relay.
 
 ## Deploy (dashboard, ~5 minutes, free)
 
@@ -15,10 +20,10 @@ enabled. It only proxies `goodreads.com`, so it isn't an open relay.
 2. Name it e.g. `ezlibby-proxy`, click **Deploy**, then **Edit code**.
 3. Replace the sample with the contents of [`goodreads-proxy.js`](./goodreads-proxy.js) and **Deploy**.
 4. Copy your Worker URL (e.g. `https://ezlibby-proxy.<you>.workers.dev`).
-5. In the webapp → **Settings** → paste it into **RSS proxy URL**.
+5. In the webapp → **Settings** → paste it into the proxy URL field. The app will
+   then prefer your Worker over the built-in public proxies.
 
-Now pasting your Goodreads shelf RSS link works (still capped at Goodreads'
-most-recent-100; use CSV for the full list).
+Link import still uses Goodreads' most-recent-100 RSS cap; use CSV for the full list.
 
 ## Deploy (CLI alternative)
 
